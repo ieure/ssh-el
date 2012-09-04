@@ -1,0 +1,25 @@
+* SSH mode for Emacs
+
+  Support for remote logins using =ssh=. This program is layered on
+  top of shell.el; the code here only accounts for the variations
+  needed to handle a remote process, e.g. directory tracking and the
+  sending of some special characters.
+
+* Usage
+
+  =M-x ssh RET hostname RET=
+
+** Completion
+
+   Tab completion is never going to work as well as with local shells,
+   but it does work. Set =ssh-directory-tracking-mode= to =’ftp=, and
+   set =ssh-mode-hook= to:
+
+#+BEGIN_SRC emacs-lisp
+(lambda ()
+ (shell-dirtrack-mode t)
+ (setq dirtrackp nil))
+#+END_SRC
+
+   Sometimes stuff will get out of sync anyways. Hit =M-x dirs RET= to
+   resync.
