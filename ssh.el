@@ -7,7 +7,7 @@
 ;; Keywords: unix, comm
 ;; Created: 1996-07-03
 
-;; $Id: ssh.el,v 1.11 2012/07/09 22:15:45 friedman Exp $
+;; $Id: ssh.el,v 1.1 2005/10/18 08:31:33 davidswelt Exp $
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,7 +20,9 @@
 ;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program; if not, you can either send email to this
+;; program's maintainer or write to: The Free Software Foundation,
+;; Inc.; 59 Temple Place, Suite 330; Boston, MA 02111-1307, USA.
 
 ;;; Commentary:
 
@@ -135,6 +137,11 @@ this variable is set from that."
 
 (defvar ssh-history nil)
 
+;;;###
+(defun ssh-hostname-at-point ()
+  (let ((hostname (thing-at-point 'url)))
+    (and hostname (substring-no-properties hostname 7))))
+
 ;;;###autoload
 (defun ssh (input-args &optional buffer)
   "Open a network login connection via `ssh' with args INPUT-ARGS.
@@ -177,18 +184,21 @@ The variable `ssh-x-display-follow-current-frame' can be used to specify
 how ssh X display tunelling interacts with frames on remote displays."
   (interactive (list
 		(read-from-minibuffer "ssh arguments (hostname first): "
-				      nil nil nil 'ssh-history)
+                      (ssh-hostname-at-point)
+                      nil nil 'ssh-history)
 		current-prefix-arg))
 
   (let* ((process-connection-type ssh-process-connection-type)
          (args (ssh-parse-words input-args))
-	 (host (car args))
-	 (user (or (car (cdr (member "-l" args)))
+         (host-parts (split-string (car args) "@"))
+         (host (car (last host-parts)))
+         (user (or (cadr (member "-l" args))
+                   (if (= 2 (length host-parts)) (car host-parts))
                    (user-login-name)))
          (buffer-name (if (string= user (user-login-name))
-                          (format "*ssh-%s*" host)
-                        (format "*ssh-%s@%s*" user host)))
-	 proc)
+                          (format "*ssh %s*" host)
+                        (format "*ssh %s@%s*" user host)))
+         proc)
 
     (and ssh-explicit-args
          (setq args (append ssh-explicit-args args)))
@@ -210,14 +220,28 @@ how ssh X display tunelling interacts with frames on remote displays."
      ((comint-check-proc buffer-name))
      (t
       (ssh-with-check-display-override
-       (lambda ()
-         (comint-exec buffer buffer-name ssh-program nil args)))
+       #'(lambda ()
+           (comint-exec buffer buffer-name ssh-program nil args)))
       (setq proc (get-buffer-process buffer))
       ;; Set process-mark to point-max in case there is text in the
       ;; buffer from a previous exited process.
       (set-marker (process-mark proc) (point-max))
 
+      ;; comint-output-filter-functions is treated like a hook: it is
+      ;; processed via run-hooks or run-hooks-with-args in later versions
+      ;; of emacs.
+      ;; comint-output-filter-functions should already have a
+      ;; permanent-local property, at least in emacs 19.27 or later.
+      (cond
+       ((fboundp 'make-local-hook)
+        (make-local-hook 'comint-output-filter-functions)
+        (add-hook 'comint-output-filter-functions 'ssh-carriage-filter nil t))
+       (t
+        (make-local-variable 'comint-output-filter-functions)
+        (add-hook 'comint-output-filter-functions 'ssh-carriage-filter)))
+
       (ssh-mode)
+
       (make-local-variable 'ssh-host)
       (setq ssh-host host)
       (make-local-variable 'ssh-remote-user)
@@ -234,7 +258,8 @@ how ssh X display tunelling interacts with frames on remote displays."
                 ((null ssh-directory-tracking-mode))
                 (t
                  (cd-absolute (concat comint-file-name-prefix "~/"))))
-        (error nil))))))
+        (error nil)))))
+  buffer)
 
 (put 'ssh-mode 'mode-class 'special)
 
@@ -361,6 +386,17 @@ local one share the same directories (through NFS)."
               (and text (setq list (cons text list))))))
       (kill-buffer buf))
     (nreverse list)))
+
+(defun ssh-carriage-filter (string)
+  (let* ((point-marker (point-marker))
+         (end (process-mark (get-buffer-process (current-buffer))))
+         (beg (or (and (boundp 'comint-last-output-start)
+                       comint-last-output-start)
+                  (- end (length string)))))
+    (goto-char beg)
+    (while (search-forward "\C-m" end t)
+      (delete-char -1))
+    (goto-char point-marker)))
 
 (defun ssh-send-Ctrl-C ()
   (interactive)
