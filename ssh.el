@@ -1,13 +1,14 @@
-;;; ssh.el --- remote login interface
+;;; ssh.el --- Support for remote logins using ssh.
 
-;; Copyright (C) 1996, 97, 98, 2001 Noah S. Friedman
+;; Copyright (C) 1996, 97, 98, 2001, Noah S. Friedman
+;; Copyright (C) 2010-2012, Ian Eure
 
 ;; Author: Noah Friedman <friedman@splode.com>
+;; Maintainer: Ian Eure <ian.eure@gmail.com>
 ;; Maintainer: friedman@splode.com
+;; Version: 1.2
 ;; Keywords: unix, comm
 ;; Created: 1996-07-03
-
-;; $Id: ssh.el,v 1.1 2005/10/18 08:31:33 davidswelt Exp $
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
