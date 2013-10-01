@@ -260,6 +260,10 @@ how ssh X display tunelling interacts with frames on remote displays."
                 (t
                  (cd-absolute (concat comint-file-name-prefix "~/"))))
         (error nil)))))
+
+  ;; enable tab-complete in remote shell
+  (setq default-directory (concat "/ssh:" input-args ":~/"))
+
   buffer)
 
 (put 'ssh-mode 'mode-class 'special)
