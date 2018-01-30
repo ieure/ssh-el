@@ -195,8 +195,8 @@ how ssh X display tunelling interacts with frames on remote displays."
          (host (car (last host-parts)))
          (user (or (cadr (member "-l" args))
                    (if (= 2 (length host-parts)) (car host-parts))
-                   (user-login-name)))
-         (buffer-name (if (string= user (user-login-name))
+                   nil))
+         (buffer-name (if (or (not user) (string= user (user-login-name)))
                           (format "*ssh %s*" host)
                         (format "*ssh %s@%s*" user host)))
          proc)
@@ -254,7 +254,7 @@ how ssh X display tunelling interacts with frames on remote displays."
                  ;; function, to avoid a gratuitous resync check; the default
                  ;; should be the user's home directory, be it local or remote.
                  (setq comint-file-name-prefix
-                       (concat "/" ssh-remote-user "@" ssh-host ":"))
+                       (make-comint-file-name-prefix))
                  (cd-absolute comint-file-name-prefix))
                 ((null ssh-directory-tracking-mode))
                 (t
@@ -299,7 +299,7 @@ local one share the same directories (through NFS)."
     (setq ssh-directory-tracking-mode t)
     (setq shell-dirtrackp t)
     (setq comint-file-name-prefix
-          (concat "/" ssh-remote-user "@" ssh-host ":")))
+          (make-comint-file-name-prefix)))
    ((< prefix 0)
     (setq ssh-directory-tracking-mode nil)
     (setq shell-dirtrackp nil))
@@ -429,6 +429,11 @@ Delete ARG characters forward, or send a C-d to process if at end of buffer."
   (if ssh-directory-tracking-mode
       (comint-dynamic-complete)
     (insert "\C-i")))
+
+(defun make-comint-file-name-prefix ()
+  (if ssh-remote-user
+      (concat "/" ssh-remote-user "@" ssh-host ":")
+    (concat "/" ssh-host ":")))
 
 (provide 'ssh)
 
