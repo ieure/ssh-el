@@ -431,9 +431,11 @@ Delete ARG characters forward, or send a C-d to process if at end of buffer."
     (insert "\C-i")))
 
 (defun make-comint-file-name-prefix ()
-  (if ssh-remote-user
-      (concat "/ssh:" ssh-remote-user "@" ssh-host ":")
-    (concat "/ssh:" ssh-host ":")))
+  (require 'tramp)
+  (format "/%s:%s%s:"
+          tramp-default-method
+          (if ssh-remote-user (format "%s@" ssh-remote-user) "")
+          ssh-host))
 
 (provide 'ssh)
 
