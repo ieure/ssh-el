@@ -18,7 +18,7 @@
 #+BEGIN_SRC emacs-lisp
 (lambda ()
  (shell-dirtrack-mode t)
- (setq dirtrackp nil))
+ (setq shell-dirtrackp nil))
 #+END_SRC
 
    Sometimes stuff will get out of sync anyways. Hit =M-x dirs RET= to
